@@ -46,7 +46,8 @@ def main():
     # 5. Plot using the existing pareto style
     fig, ax = pareto.plot_front_2d(
         points, 
-        ["Obj. 4: Resource Demand (normalized)", "Obj. 1: Network Quality (normalized)"],
+        ["Environmental and economic impact\n(normalized, lower = better)",
+         "Network quality\n(normalized, lower = better)"],
         baseline_idx=baseline_idx,
         highlight_idx=highlight_idx
     )
@@ -62,10 +63,12 @@ def main():
         else:
             new_labels.append(l)
     
-    # Place legend inside the figure at upper right with expanded limits
-    ax.legend(handles, new_labels, frameon=False, loc="upper right")
+    # Legend below the axes, as for the use-case figures, so it cannot cover data
+    ax.legend(handles, new_labels, frameon=False, loc="upper left", ncol=1,
+              handlelength=1.1, labelspacing=0.2, handletextpad=0.4,
+              columnspacing=0.8, borderaxespad=0.2)
     ax.set_xlim(0, 1.4)
-    ax.set_ylim(0, 1.4)
+    ax.set_ylim(0, 1.0 + 0.6 * 2.0 / pareto.FIG_H)   # headroom for the legend and the callout
     
     # Annotate the arrow to show "Improvement potential" and "Goal of SUSTAINET"
     bx, by = points[baseline_idx]
@@ -74,11 +77,12 @@ def main():
     mid_x = (bx + hx) / 2
     mid_y = (by + hy) / 2
     
-    # Move the text more to the top left to completely avoid the point cloud
-    ax.annotate("Goal of SUSTAINET:\nImprovement potential\nwithout burden shifting",
-                xy=(mid_x, mid_y), xytext=(1.35, 0.05),
+    # The point cloud is confined to [0.1, 1.0] in both axes while the limits run to
+    # 1.4, so the upper-right corner is empty and the callout cannot cover any point.
+    ax.annotate("improvement\npotential",
+                xy=(mid_x, mid_y), xytext=(1.37, 0.80),
                 arrowprops=dict(arrowstyle="-|>", color="black", lw=0.8),
-                fontsize=7, ha='right', va='bottom', color="black",
+                fontsize=7, ha='right', va='center', color="black",
                 bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="#9aa0a6", alpha=0.9))
                 
     

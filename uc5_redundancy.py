@@ -6,14 +6,18 @@ paths (ring + chord topology). Configuration: number of provisioned disjoint
 paths k in {1,2,3} x link protection class. Service is up if at least one
 provisioned path is fully up (independent link failures).
 
-Literature anchors (to cite):
-  - link availability: standard long-haul fiber ~0.999 per 100 km-class link
-    (availability modeling literature, e.g., Heegaard/Trivedi class);
-    protected/premium links 0.9995 at ~1.3x cost
-  - resource proxy: provisioned fiber-km (embodied + operational cost scale
-    with lit fiber)
-  - governance: critical-infrastructure availability floor 99.99 %
-    (CER-directive-style obligation)
+Input provenance and boundary:
+  - topology, link counts/lengths and link availability sweep .995/.999/.9999
+    are scenario assumptions, not values supplied by the cited survivability
+    or path-diversity papers;
+  - protection halves each link's outage probability and carries a 1.3x
+    cost markup: assumed sensitivity model, not a measured protection system;
+  - weighted fiber-km is a cost/resource proxy. A protection markup does not
+    represent extra physical fiber or a measured environmental footprint;
+  - the 99.99 % availability floor is a scenario service requirement, not
+    asserted to be a numerical requirement of a specific regulation;
+  - component failures are independent and paths link-disjoint; common-mode
+    failures and endpoints are outside this simplified reliability boundary.
 
 Metrics (use case U = "connectivity for critical regional service"):
   - resilience/availability:  service unavailability [min/year]   [min]
@@ -31,6 +35,7 @@ import pareto
 
 OUT = Path(__file__).parent
 FIG = OUT / "figures"
+FIG.mkdir(exist_ok=True)   # so each script also runs standalone
 
 # three link-disjoint paths s->t: lengths of their links [km]
 PATHS = {
@@ -38,7 +43,10 @@ PATHS = {
     "P2 (ring)":  [200, 220, 240, 160],     # 820 km
     "P3 (chord)": [300, 350],               # 650 km
 }
-CLASSES = {"std": (0.999, 1.0), "prot": (0.9995, 1.3)}  # (A_link, cost factor)
+# per-link protection class: (outage-probability factor, relative cost factor).
+# A protected link halves the outage probability of the scenario's A_link at
+# 1.3x the cost; the class does not carry an absolute availability of its own.
+CLASSES = {"std": (1.0, 1.0), "prot": (0.5, 1.3)}
 US_PER_KM = 5.0
 AVAIL_FLOOR = 0.9999
 MIN_PER_YEAR = 365.25 * 24 * 60
@@ -46,9 +54,8 @@ MIN_PER_YEAR = 365.25 * 24 * 60
 
 def evaluate(sel, cls, a_link):
     """sel: tuple of path names; cls: protection class name."""
-    _, cost_f = CLASSES[cls]
-    # protected links halve the outage probability at 1.3x cost
-    a = a_link if cls == "std" else 1 - (1 - a_link) * 0.5
+    out_f, cost_f = CLASSES[cls]
+    a = 1 - (1 - a_link) * out_f
     p_up = []
     cost = 0.0
     rtt = 0.0
@@ -84,7 +91,8 @@ def main():
             front = pareto.pareto_front(norm[feas])
             pool = np.where(feas)[0]
             cand = int(pool[int(np.argmin(points[pool, 1]))])  # cheapest feasible
-            cls_ = pareto.classify_change(norm[base], norm[cand], front)
+            cls_ = pareto.classify_change(norm[base], norm[cand], front,
+                                     destination_feasible=bool(feas[cand]))
             d0 = pareto.distance_to_front(norm[base], front)
             cc = configs[cand]
             print(f"A_link={a_link}: base 1xstd feas={bool(feas[base])} "
@@ -102,16 +110,20 @@ def main():
                                        "avail_floor": AVAIL_FLOOR,
                                        "a_link": 0.999})
     ann = [
-        (base, "baseline\n(unprotected, infeasible)", (0.30, 0.92),
-         {"color": pareto.C_BASE}),
-        (cand, "target\n(cost-minimal compliant)", (0.55, 0.30),
-         {"color": pareto.C_IMP}),
+        (base, "unprotected:\ninfeasible", (0.33, 0.97), {"color": pareto.C_BASE}),
+        (cand, "cheapest\ncompliant", (0.62, 0.40), {"color": pareto.C_IMP}),
     ]
+    _norm, _ = pareto.normalize(points, directions)
+    _front = pareto.pareto_front(_norm[feas])
+    _cls = pareto.classify_change(_norm[base], _norm[cand], _front,
+                                  destination_feasible=bool(feas[cand]))
     pareto.plot_front_2d(points[:, [1, 0]],
                          ["fiber cost [km-eq]", "unavailability [min/y]"],
                          baseline_idx=base, highlight_idx=cand,
                          feasible=feas, annotate=ann,
-                         legend_loc="center right", legend_bbox=(1.0, 0.60),
+                         front_mask=pareto.feasible_front_mask(
+                             points, directions, feas),
+                         highlight_label=pareto.highlight_tag(_cls),
                          fname=FIG / "uc5_front_cost_avail.pdf")
 
 

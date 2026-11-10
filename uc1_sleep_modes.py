@@ -7,14 +7,25 @@ has been idle for tau seconds, the BS enters a sleep state; the next arrival
 triggers a wake-up that takes Ts seconds (setup), during which it consumes
 setup power. Simulated with a Lindley-type workload recursion with setup.
 
-Power model (EARTH macro BS, Auer et al. 2011): P0 = 130 W (idle / minimum
-non-zero output), Pmax = 20 W, dp = 4.7, so P_active = P0 + dp*Pmax = 224 W
-(transmitting) and Psleep = 75 W. The deeper sleep level (10 W) and the
-per-mode wake-up (setup) times follow the advanced sleep-mode model of
-Debaillie et al. 2015 (light/micro-DTX: fast wake-up 0.1 s; deep: slow
-wake-up 2.0 s):
-  P_active = 224 W, P_idle = P0 = 130 W, P_setup = 224 W (during wake-up),
-  sleep modes: light (75 W, Ts = 0.1 s), deep (10 W, Ts = 2.0 s).
+Power model (Debaillie et al. 2015, Table V; 2x2 macro, 2020 technology,
+whole base station). The active, idle and sleep powers and total transition
+durations below are read from that table. Setup power is assumed equal to
+full-load power; it is not a separate measured transition-power value:
+  P_active = 702.6 W (full load), P_idle = 114.5 W (no load),
+  P_setup  = 702.6 W (charged at active power during wake-up),
+  SM1 (OFDM symbol)  76.5 W, Ts = 71.4 us
+  SM2 (sub-frame)     8.6 W, Ts = 1 ms
+  SM3 (radio frame)   6.0 W, Ts = 10 ms
+  SM4 (standby)       5.3 W, Ts = 1 s
+
+Assumption on Ts: Debaillie reports each duration as a *total* transition,
+deactivation plus reactivation. The model charges that whole duration as an
+arrival-triggered wake-up at active power and no cost on entry, which is the
+declared delay-model assumption, not a measured split between phases. In
+zero-timer sensitivity runs at Ts/2 and Ts/4, the mode ordering, power
+non-monotonicity and SM4 infeasibility remain. SM2 power changes from 149.7 W
+to 148.6/148.0 W; the saving changes numerically but still rounds to 36 %.
+This does not establish actual entry/exit costs or interrupted-entry behavior.
 
 Taxonomy metrics (use case U = "low-load macro cell, elastic traffic"):
   - Network quality / time-based:            mean flow response time [ms]
@@ -22,11 +33,15 @@ Taxonomy metrics (use case U = "low-load macro cell, elastic traffic"):
   - Resource demand / energy:                average power [W]
   Governance constraint (QoS obligation):    mean response time <= 200 ms
 
-Configuration space X: {always-on (no sleep)} U {light, deep} x idle timer tau.
-Baseline x0: always-on with no sleep, idling at the EARTH P0 = 130 W. Having
-the lowest delay (no wake-up penalty), it lies on the Pareto front; enabling
-sleep trades power for delay (a burden shift along the front), while overly
-aggressive deep sleep violates the delay obligation and raises average power.
+Configuration space X: {always-on (no sleep)} U {SM1..SM4} x idle timer tau,
+i.e. 4 modes x 9 timers + 1 = 37 configurations. Baseline x0: always-on with
+no sleep, idling at P_idle = 114.5 W. Having the lowest delay (no wake-up
+penalty), it lies on the Pareto front; enabling sleep trades power for delay
+(a burden shift along the front), while the deepest mode SM4 violates the
+delay obligation and *raises* average power. It is outside formal outcome
+classification because its destination is infeasible; raw objective dominance
+can still be inspected. Power is not monotone in sleep
+depth, because the 1 s wake-up is charged at 702.6 W.
 """
 import numpy as np
 from pathlib import Path
@@ -34,10 +49,18 @@ import pareto
 
 OUT = Path(__file__).parent
 FIG = OUT / "figures"
+FIG.mkdir(exist_ok=True)   # so each script also runs standalone
 
 # ------------------------------------------------------------- parameters
-P_ACTIVE, P_IDLE, P_SETUP = 224.0, 130.0, 224.0     # W (EARTH macro)
-SLEEP_MODES = {"light": (75.0, 0.1), "deep": (10.0, 2.0)}  # (P_sleep W, Ts s)
+# Debaillie et al. 2015, Table V (2x2 macro, 2020 technology), whole base station:
+# full load 702.6 W, no load 114.5 W; sleep modes SM1..SM4 at 76.5 / 8.6 / 6.0 / 5.3 W
+# with TOTAL transition budgets 71.4 us / 1 ms / 10 ms / 1 s. "light" is SM1 (OFDM symbol),
+# "deep" is SM4 (standby). Wake-ups are charged at active power.
+P_ACTIVE, P_IDLE, P_SETUP = 702.6, 114.5, 702.6     # W (Debaillie 2x2 macro)
+# All four sleep modes of the cited model (OFDM symbol / sub-frame / radio frame /
+# standby), so the candidate space is not an arbitrary selection of two of them.
+SLEEP_MODES = {"SM1": (76.5, 71.4e-6), "SM2": (8.6, 1e-3),
+               "SM3": (6.0, 10e-3), "SM4": (5.3, 1.0)}  # (P_sleep W, Ts s)
 LAM, MU = 4.0, 20.0          # arrivals/s, service rate/s  (rho = 0.2, night load)
 SLA_MEAN_MS = 200.0          # governance: mean delay obligation
 N_ARRIVALS = 100_000
@@ -85,8 +108,8 @@ def main():
     directions = ["min", "min", "min"]
     configs, points = [], []
 
-    # baseline x0: always-on, no sleep, idling at the EARTH macro P0 = 130 W
-    # (Auer et al. 2011). No idle-state assumption beyond the EARTH model.
+    # baseline x0: always-on, no sleep, idling at the Debaillie no-load power
+    # P_idle = 114.5 W. No idle-state assumption beyond that table.
     md, p95, pw = simulate(tau=np.inf, p_sleep=P_IDLE, t_setup=0.0)
     configs.append({"policy": "always-on (no sleep)", "tau": None})
     points.append([md * 1e3, p95 * 1e3, pw])
@@ -106,13 +129,14 @@ def main():
     base = 0
     # candidate: feasible config with lowest power (resource priority s.t. SLA)
     cand = int(np.where(feasible, points[:, 2], np.inf).argmin())
-    cls = pareto.classify_change(norm[base], norm[cand], front_norm)
+    cls = pareto.classify_change(norm[base], norm[cand], front_norm,
+                                 destination_feasible=bool(feasible[cand]))
     d0 = pareto.distance_to_front(norm[base], front_norm)
     d1 = pareto.distance_to_front(norm[cand], front_norm)
     hv = pareto.hypervolume(norm[feasible])
 
-    # burden-shift / infeasibility example: deep sleep, tau = 0
-    ex = configs.index({"policy": "deep", "tau": 0.0})
+    # infeasibility example: the deepest sleep mode (SM4, standby), tau = 0
+    ex = configs.index({"policy": "SM4", "tau": 0.0})
 
     # --- outputs
     pareto.save_points(OUT / "uc1_points.json", names, directions, points,
@@ -128,19 +152,22 @@ def main():
     # linked to its point by a thin leader line, so labels never overflow the
     # axes or overlap each other (cf. pareto.anchor_label).
     ann = [
-        (ex, "deep sleep\n(burden shift /\nSLA violation)", (0.46, 0.74)),
-        (base, "always-on\n(no sleep, baseline)", (0.46, 0.26),
-         {"color": pareto.C_BASE}),
-        (cand, "light sleep\n(target trade-off)", (0.03, 0.40),
+        (ex, "SM4 (standby):\ninfeasible", (0.98, 0.55)),
+        (cand, f"{configs[cand]['policy']}: lowest\nfeasible power", (0.42, 0.26),
          {"color": pareto.C_IMP}),
     ]
 
     disp = points[:, [2, 0]]
+    # The front is the feasible non-dominated set over ALL THREE objectives;
+    # the figure shows two of them, so the mask must not be recomputed from
+    # the projection (see pareto.feasible_front_mask).
+    fmask = pareto.feasible_front_mask(points, directions, feasible)
     fig, ax = pareto.plot_front_2d(disp,
                          ["avg. power [W]", "mean delay [ms]"],
                          baseline_idx=base, highlight_idx=cand,
                          feasible=feasible, annotate=ann,
-                         legend_loc="upper left")
+                         front_mask=fmask,
+                         highlight_label=pareto.highlight_tag(cls))
     fig.savefig(FIG / "uc1_front_power_delay.pdf")
     fig.savefig(FIG / "uc1_front_power_delay.png")
     pareto.plot_parallel(points, ["mean delay", "p95 delay", "power"],

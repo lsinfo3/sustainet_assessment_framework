@@ -1,17 +1,25 @@
 """
 UC3 — Edge vs. cloud placement of a latency-sensitive service.
 
-Model: 12 access sites on a 400x400 km region, central cloud DC outside the
-region (500 km away). Configuration: number k of edge sites (greedy by
-demand) serving their nearest sites; remaining demand goes to the cloud.
+Model: 12 access sites in a 400x400 km region. The scenario defines each
+site-to-cloud fiber route as 500 km plus the site's Euclidean distance to
+the region center (200, 200); 500 km is a route offset, not a common path
+length. Their demand-weighted mean is 632.497 km. Configuration: k edge
+sites selected greedily by demand, serving their nearest sites within
+150 km; remaining demand goes to the cloud.
 
-Literature anchors (cite in paper):
-  - propagation: 5 us/km in fiber (~1 ms per 200 km one-way)
-  - server power: idle 100 W / full 200 W (SPECpower-class 2S server)
-  - PUE: hyperscale cloud 1.2 vs. edge site 1.6 (ISO/IEC 30134-2 context)
-  - embodied carbon: ~1300 kgCO2e/server amortized over 5 y (Dell LCA class)
-  - element availability: edge site 0.999 (no redundancy), cloud 0.9999
-    (redundant), per-100km fiber path segment 0.9995
+Input provenance:
+  - propagation: 5 us/km in fiber, a physical approximation;
+  - idle/full server power: 100/200 W, scenario assumptions. The half-peak
+    idle ratio is motivated by Barroso/Hoelzle, not these absolute values;
+  - PUE 1.2 cloud / 1.6 edge: assumptions. ISO/IEC 30134-2 defines PUE,
+    not these particular values;
+  - 1300 kgCO2e/server amortized over 5 y: an assumed embodied inventory,
+    without a specific vendor report; the LCA citation supplies methodology;
+  - availability .999 edge / .9999 cloud / .9995 per 100 km segment:
+    assumed independent component probabilities, not measured deployment data;
+  - the geometry, 2 ms processing time, load/server and localization thresholds
+    are scenario assumptions. No financial cost objective is modeled.
 
 Metrics (use case U = "regional latency-sensitive service, e.g., CPS control"):
   - quality/time-based:    demand-weighted mean RTT [ms]        [min]
@@ -30,6 +38,7 @@ import pareto
 
 OUT = Path(__file__).parent
 FIG = OUT / "figures"
+FIG.mkdir(exist_ok=True)   # so each script also runs standalone
 
 RNG = np.random.default_rng(3)
 N_SITES = 12
@@ -83,9 +92,11 @@ def evaluate(k):
     power = 0.0
     n_servers = 0
     for e in np.where(edge_load > 0)[0]:
-        util = min(1.0, edge_load[e] / LOAD_PER_SERVER)
-        power += (P_IDLE + (P_FULL - P_IDLE) * util) * PUE_EDGE
-        n_servers += 1
+        # dimension edge sites to their load, with the same rule as the cloud
+        srv = int(np.ceil(edge_load[e] / LOAD_PER_SERVER))
+        util = min(1.0, edge_load[e] / (srv * LOAD_PER_SERVER))
+        power += srv * (P_IDLE + (P_FULL - P_IDLE) * util) * PUE_EDGE
+        n_servers += srv
     cloud_demand = DEMAND.sum() - served_local
     cloud_servers = int(np.ceil(cloud_demand / LOAD_PER_SERVER)) if cloud_demand > 0 else 0
     for _ in range(cloud_servers):
@@ -117,11 +128,11 @@ def main():
         front = pareto.pareto_front(norm[feas])
         base = 0
         cand_pool = np.where(feas)[0]
-        # improved: feasible config minimizing distance to front, prefer low k
-        dists = [pareto.distance_to_front(norm[i], front) for i in cand_pool]
-        cand = int(cand_pool[int(np.argmin(dists))])
-        cls = (pareto.classify_change(norm[base], norm[cand], front)
-               if cand != base else "-")
+        # Declared selection priority: minimum operational power among
+        # compliant candidates (ties resolved by candidate order).
+        cand = int(cand_pool[np.argmin(points[cand_pool, 1])])
+        cls = pareto.classify_change(norm[base], norm[cand], front,
+                                     destination_feasible=bool(feas[cand]))
         d0 = pareto.distance_to_front(norm[base], front)
         print(f"localization >= {req:3.0f} %: baseline feas={bool(feas[base])} "
               f"d={d0:.2f}; candidate k={configs[cand]['edge_sites']} "
@@ -131,26 +142,30 @@ def main():
     pareto.save_points(OUT / "uc3_points.json", names, directions, points,
                        configs, extra={"local_share": local.tolist(),
                                        "localization_req": 60.0})
-    # figure: RTT vs power, annotate k
+    # figure: RTT vs power. Highlight the SELECTED candidate at the 60 % requirement
+    # using the same minimum-power rule as the table and sweep above.
     disp = points[:, [1, 0]]
-    first_feas = int(np.where(feas)[0][0])
+    _norm, _ = pareto.normalize(points, directions)
+    _front = pareto.pareto_front(_norm[feas])
+    _pool = np.where(feas)[0]
+    sel = int(_pool[np.argmin(points[_pool, 1])])
     ann = [
-        (0, "baseline\n(cloud-only, infeasible)", (0.24, 0.93),
-         {"color": pareto.C_BASE}),
-        (first_feas,
-         f"target (minimal\ncompliant edge, k={configs[first_feas]['edge_sites']})",
-         (0.40, 0.60)),
+        (0, "cloud-only:\ninfeasible", (0.30, 0.90), {"color": pareto.C_BASE}),
+        (sel, f"k={configs[sel]['edge_sites']}: lowest-power\ncompliant",
+         (0.46, 0.44), {"color": pareto.C_IMP}),
     ]
-    if 12 != first_feas:
-        ann.append((12, "full edge (k=12)", (0.80, 0.35)))
+    _cls = pareto.classify_change(_norm[0], _norm[sel], _front,
+                                  destination_feasible=bool(feas[sel]))
     pareto.plot_front_2d(disp, ["power [W]", "mean RTT [ms]"],
-                         baseline_idx=0, highlight_idx=first_feas,
+                         baseline_idx=0, highlight_idx=sel,
                          feasible=feas, annotate=ann,
                          legend_loc="upper right",
+                         front_mask=pareto.feasible_front_mask(
+                             points, directions, feas),
+                         highlight_label=pareto.highlight_tag(_cls),
                          fname=FIG / "uc3_front_power_rtt.pdf")
     pareto.plot_parallel(points, ["RTT", "power", "embodied", "avail."],
-                         directions, baseline_idx=0,
-                         highlight_idx=int(np.where(feas)[0][0]),
+                         directions, baseline_idx=0, highlight_idx=sel,
                          fname=FIG / "uc3_parallel.pdf")
 
 
