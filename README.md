@@ -89,6 +89,11 @@ MIT. See [LICENSE](LICENSE).
 
 ## Citing
 
+If you use this code, please cite the paper. GitHub's "Cite this repository"
+button reads `CITATION.cff`; the BibTeX entry is also below. This is a request,
+not a licence condition — the code itself is MIT, with no attribution
+requirement beyond the copyright notice.
+
 ```bibtex
 @article{loh2026sustra,
   title   = {{SusTRA: A Trade-off Assessment Framework for Sustainable and

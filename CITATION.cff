@@ -1,0 +1,124 @@
+cff-version: 1.2.0
+message: >-
+  If you use this code, please cite the paper it accompanies, listed under
+  preferred-citation below.
+title: SusTRA evaluation code
+abstract: >-
+  Code reproducing the six use cases and seven figures of the SusTRA paper:
+  direction alignment, min-max normalisation, Pareto dominance, empirical-front
+  extraction, distance to the front, and classification of a change as a strict
+  improvement, a trade-off improvement, burden shifting, or a degradation.
+type: software
+license: MIT
+repository-code: https://github.com/lsinfo3/sustainet_assessment_framework
+authors:
+  - family-names: Loh
+    given-names: Frank
+    affiliation: University of Würzburg, Chair of Communication Networks
+  - family-names: Ayoub
+    given-names: Omran
+  - family-names: Baur
+    given-names: Carina
+  - family-names: Das
+    given-names: Sandip
+  - family-names: Foschum
+    given-names: Felix
+  - family-names: Hautz
+    given-names: Niklas
+  - family-names: Hegermann
+    given-names: Henriette
+  - family-names: Heye
+    given-names: David
+  - family-names: Hock
+    given-names: David
+  - family-names: Hussein
+    given-names: Fawaz
+  - family-names: Lipps
+    given-names: Christoph
+  - family-names: Monti
+    given-names: Paolo
+  - family-names: Natalino
+    given-names: Carlos
+  - family-names: Paulus
+    given-names: Theresa
+  - family-names: Pennekamp
+    given-names: Jan
+  - family-names: Rüb
+    given-names: Matthias
+  - family-names: Rudion
+    given-names: Krzysztof
+  - family-names: Schardt
+    given-names: Simon
+  - family-names: Schotten
+    given-names: Hans
+  - name-particle: van
+    family-names: Sloun
+    given-names: Christian
+  - family-names: Straub
+    given-names: Michael
+  - family-names: Suomalainen
+    given-names: Jani
+  - family-names: Swainson
+    given-names: Phil
+  - family-names: Hoßfeld
+    given-names: Tobias
+preferred-citation:
+  type: unpublished
+  title: >-
+    SusTRA: A Trade-off Assessment Framework for Sustainable and Resilient
+    Communication Networks
+  year: 2026
+  notes: >-
+    Submitted for publication. Developed in the Celtic-Next flagship project
+    SUSTAINET, Common Task 3. Update this entry with the journal, volume and DOI
+    once the paper is accepted.
+  authors:
+    - family-names: Loh
+      given-names: Frank
+    - family-names: Ayoub
+      given-names: Omran
+    - family-names: Baur
+      given-names: Carina
+    - family-names: Das
+      given-names: Sandip
+    - family-names: Foschum
+      given-names: Felix
+    - family-names: Hautz
+      given-names: Niklas
+    - family-names: Hegermann
+      given-names: Henriette
+    - family-names: Heye
+      given-names: David
+    - family-names: Hock
+      given-names: David
+    - family-names: Hussein
+      given-names: Fawaz
+    - family-names: Lipps
+      given-names: Christoph
+    - family-names: Monti
+      given-names: Paolo
+    - family-names: Natalino
+      given-names: Carlos
+    - family-names: Paulus
+      given-names: Theresa
+    - family-names: Pennekamp
+      given-names: Jan
+    - family-names: Rüb
+      given-names: Matthias
+    - family-names: Rudion
+      given-names: Krzysztof
+    - family-names: Schardt
+      given-names: Simon
+    - family-names: Schotten
+      given-names: Hans
+    - name-particle: van
+      family-names: Sloun
+      given-names: Christian
+    - family-names: Straub
+      given-names: Michael
+    - family-names: Suomalainen
+      given-names: Jani
+    - family-names: Swainson
+      given-names: Phil
+    - family-names: Hoßfeld
+      given-names: Tobias
