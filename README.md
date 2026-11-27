@@ -89,23 +89,12 @@ MIT. See [LICENSE](LICENSE).
 
 ## Citing
 
-If you use this code, please cite the paper. GitHub's "Cite this repository"
-button reads `CITATION.cff`; the BibTeX entry is also below. This is a request,
-not a licence condition — the code itself is MIT, with no attribution
-requirement beyond the copyright notice.
+If you use this code, please cite the paper. This is a request, not a licence
+condition — the code itself is MIT, with no attribution requirement beyond the
+copyright notice.
 
-```bibtex
-@article{loh2026sustra,
-  title   = {{SusTRA: A Trade-off Assessment Framework for Sustainable and
-             Resilient Communication Networks}},
-  author  = {Loh, Frank and Ayoub, Omran and Baur, Carina and Das, Sandip and
-             Foschum, Felix and Hautz, Niklas and Hegermann, Henriette and
-             Heye, David and Hock, David and Hussein, Fawaz and
-             Lipps, Christoph and Monti, Paolo and Natalino, Carlos and
-             Paulus, Theresa and Pennekamp, Jan and R{\"u}b, Matthias and
-             Rudion, Krzysztof and Schardt, Simon and Schotten, Hans and
-             van Sloun, Christian and Straub, Michael and
-             Suomalainen, Jani and Swainson, Phil and Ho{\ss}feld, Tobias},
-  year    = {2026}
-}
-```
+The citation lives in **`CITATION.cff`** and nowhere else, so there is one place
+to update. Click **"Cite this repository"** in the sidebar on GitHub and it
+generates BibTeX or APA from that file. A copy of the entry is deliberately not
+repeated here: the paper is under submission, and a second hand-maintained copy
+would go stale the moment it is accepted and given a journal, volume and DOI.
