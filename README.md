@@ -89,12 +89,4 @@ MIT. See [LICENSE](LICENSE).
 
 ## Citing
 
-If you use this code, please cite the paper. This is a request, not a licence
-condition — the code itself is MIT, with no attribution requirement beyond the
-copyright notice.
-
-The citation lives in **`CITATION.cff`** and nowhere else, so there is one place
-to update. Click **"Cite this repository"** in the sidebar on GitHub and it
-generates BibTeX or APA from that file. A copy of the entry is deliberately not
-repeated here: the paper is under submission, and a second hand-maintained copy
-would go stale the moment it is accepted and given a journal, volume and DOI.
+If you use this code, please cite the paper 'SusTRA: A Trade-off Assessment Framework for Sustainable and Resilient Communication Networks'. The code itself is MIT, with no attribution requirement beyond the copyright notice.
