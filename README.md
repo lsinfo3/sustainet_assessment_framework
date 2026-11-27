@@ -3,15 +3,16 @@
 Code that reproduces every number and figure in
 
 > **SusTRA: A Trade-off Assessment Framework for Sustainable and Resilient
-> Communication Networks.** F. Loh, O. Ayoub, C. Baur, F. Foschum, N. Hautz,
-> H. Hegermann, D. Heye, D. Hock, T. Hoßfeld, F. Hussein, C. Natalino,
-> T. Paulus, J. Pennekamp, M. Rüb, S. Schardt, C. van Sloun, J. Suomalainen,
-> P. Swainson, C. Lipps. Developed in the Celtic-Next flagship project
-> **SUSTAINET**, Common Task 3.
+> Communication Networks.** F. Loh, O. Ayoub, C. Baur, S. Das, F. Foschum,
+> N. Hautz, H. Hegermann, D. Heye, D. Hock, F. Hussein, C. Lipps, P. Monti,
+> C. Natalino, T. Paulus, J. Pennekamp, M. Rüb, K. Rudion, S. Schardt,
+> H. Schotten, C. van Sloun, M. Straub, J. Suomalainen, P. Swainson,
+> T. Hoßfeld. Developed in the Celtic-Next flagship project **SUSTAINET**,
+> Common Task 3.
 
 SusTRA treats network sustainability as a trade-off among four co-equal
-assessment dimensions — network quality, network resilience, trust and
-governance, and environmental and economic impact — and formulates their joint
+pillars — network quality, network resilience, trust and governance, and
+environmental and economic impact — and formulates their joint
 assessment as a constrained multi-objective (Pareto) problem. Each of the six
 use cases is a small analytical or simulation model. All share one
 implementation of the formal assessment model: direction alignment, min–max
@@ -41,7 +42,8 @@ the two-axis figures project away, and `uc2_front_energy_mos.pdf`, an
 energy-against-quality view of Use Case 2 in the shared front grammar.
 
 Random seeds are fixed, so repeated runs are identical. The seven figures
-included in the paper are byte-identical to the output of a clean run.
+included in the paper match the output of a clean run exactly, apart from the
+creation timestamp that matplotlib embeds in every PDF.
 
 ## Files
 
@@ -84,3 +86,21 @@ predict a real deployment.
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
+
+## Citing
+
+```bibtex
+@article{loh2026sustra,
+  title   = {{SusTRA: A Trade-off Assessment Framework for Sustainable and
+             Resilient Communication Networks}},
+  author  = {Loh, Frank and Ayoub, Omran and Baur, Carina and Das, Sandip and
+             Foschum, Felix and Hautz, Niklas and Hegermann, Henriette and
+             Heye, David and Hock, David and Hussein, Fawaz and
+             Lipps, Christoph and Monti, Paolo and Natalino, Carlos and
+             Paulus, Theresa and Pennekamp, Jan and R{\"u}b, Matthias and
+             Rudion, Krzysztof and Schardt, Simon and Schotten, Hans and
+             van Sloun, Christian and Straub, Michael and
+             Suomalainen, Jani and Swainson, Phil and Ho{\ss}feld, Tobias},
+  year    = {2026}
+}
+```
